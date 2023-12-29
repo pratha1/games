@@ -1,0 +1,143 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import turtle
+from mpl_point_clicker import clicker
+
+#int_clicker will need to be installed through 'pip install mpl_point_clicker'
+
+def q(string, bol):
+  canvas = turtle.Screen()
+  turtle.pencolor("maroon")
+  turtle.goto(-400,0)
+  turtle.write(string,move=True,align="left",font=("ariel",200,"normal"))
+  turtle.clear()
+  turtle.goto(-550,0)
+  turtle.write("Instructions:\n 1. The Blue and black players alternate placing pieces \n 2. Each player will place a total of 8 pieces, unless one of the winning requirements is met \n 3. The winning requirements are as follows: \n     a: Four pieces of the same color are in a row (either vertical, horizontal, or diagnal) \n     b: Four pieces of the same color form a square \n 4. If no player wins after 8 pieces each are played, they take turns moving a piece to a \n    new position ",move=True,align="left",font=("ariel",25,"normal"))
+  canvas.exitonclick()
+
+
+#draws board, removes axis
+def draw_board():
+    fig = plt.figure(figsize=[9,9]) 
+    fig.patch.set_facecolor(color='tan')   
+    ax = fig.add_subplot(111)
+    ax.set_axis_off()    
+    return fig, ax
+
+
+# creates grids by plotting on board (since axis are removed)
+def draw_grids(ax):
+    ax.plot([0,0],[0,6],'k')
+    ax.plot([6,6],[0,6],'k')
+    ax.plot([0,6],[0,0],'k')
+    ax.plot([0,6],[6,6],'k')
+    for x in range(1,6,1):
+        ax.plot([x, x], [1,5], 'k')
+    for y in range(1,6,1):
+        ax.plot([1, 5], [y,y], 'k')
+    for i in range(1,6,1):
+        for j in range(1,6,1):
+            ax.plot(i,j,'wo',markersize=75)
+
+    ax.set_position([0,0,0.686,1])
+
+
+def checkHorz(typ):
+  # if four in a row horizontal
+    if typ == 'Blue':
+        for i in range(5):
+            for j in range(2):
+                if wlist[i,j] == 1 and wlist[i,j+1] == 1 and wlist[i,j+2] == 1 and wlist[i,j+3] == 1:
+                    return True
+    if typ == 'Black':
+        for i in range(5):
+            for j in range(2):
+                if klist[i,j] == 1 and klist[i,j+1] == 1 and klist[i,j+2] == 1 and klist[i,j+3] == 1:
+                    return True
+    return False
+
+
+def checkVert(typ):
+    if typ == 'Blue':
+        for i in range(2):
+            for j in range(5):
+                if wlist[i,j]==1 and wlist[i+1,j]==1 and wlist[i+2,j]==1 and wlist[i+3,j]==1:
+                    return True
+    if typ == 'Black':
+        for i in range(2):
+            for j in range(5):
+                if klist[i,j]==1 and klist[i+1,j]==1 and klist[i+2,j]==1 and klist[i+3,j]==1:
+                    return True
+    return False
+
+
+def checksquare(typ):
+    if typ == 'Blue':
+        for i in range(4):
+            for j in range(4):
+                if wlist[i,j]==1 and wlist[i+1,j]==1 and wlist[i,j+1]==1 and wlist[i+1,j+1]==1:
+                    return True
+    elif typ == 'Black':
+        for i in range(4):
+            for j in range(4):
+                if klist[i,j]==1 and klist[i+1,j]==1 and klist[i,j+1]==1 and klist[i+1,j+1]==1:
+                    return True
+
+
+def checkBoard(new_class: str):
+    if new_class == 'Quit':
+        exit()
+
+# clicker event function callback when click, 
+# round point to nearest int and updates graph
+def roundP(position:(int, int),klass:str):
+  x,y = position
+  x, y = round(x), round(y)
+  if klass=='Move Piece' and (mlist[0] == 8 or mlist[1] == 8):
+      ax.plot(x,y,'wo',markersize=75)
+      if lastClass[0] == 'Black':
+          mlist[0] -= 1
+          wlist[x-1,y-1] = False
+      elif lastClass[0] == 'Blue':
+          mlist[1] -= 1
+          klist[x-1,y-1] = False
+      lastClass[0] = ''
+  if klass=='Blue' and mlist[0]<8 and lastClass[0] != 'Blue':
+      lastClass[0] = 'Blue'
+      mlist[0] += 1
+      ax.plot(x,y,'bo',markersize=40)
+      wlist[x-1,y-1] = True
+      if checkHorz('Blue') or checkVert('Blue') or checksquare('Blue'):
+          plt.close("all")
+          print('Blue Won!')
+          exit()
+  if klass=='Black' and mlist[1]<8 and lastClass[0] != 'Black':
+      lastClass[0] = 'Black'
+      mlist[1] += 1
+      ax.plot(x,y,'ko',markersize=40)
+      klist[x-1,y-1] = True
+      if checkHorz('Black') or checkVert('Black') or checksquare('Black'):
+          plt.close("all")
+          print('Black Won!')
+          exit()
+
+
+# main code: draws board, grid, starts clicker
+
+
+q("Teeko",True)
+
+lastClass = ['']
+mlist = [0,0]
+wlist,klist = np.arange(0,25).reshape(5,5), np.arange(0,25).reshape(5,5)
+for i in range(5):
+    for j in range(5):
+        wlist[i,j] = False
+        klist[i,j] = False
+
+fig, ax = draw_board()
+draw_grids(ax)
+klicker = clicker(ax, ['Blue','Black','Move Piece','Quit'],markers=['o','o','o','*'],colors=['blue','black','white','red'])
+klicker.on_point_added(roundP)
+klicker.on_class_changed(checkBoard)
+plt.show()
